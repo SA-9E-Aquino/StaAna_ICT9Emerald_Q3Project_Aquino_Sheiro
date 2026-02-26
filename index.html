@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>eSakayMo Fare Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --orange: #F5A623;
+    --blue: #1A3A6B;
+    --teal: #4ECDC4;
+    --dark: #0d0d1a;
+    --card-bg: rgba(255,255,255,0.07);
+    --border: rgba(255,255,255,0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--dark);
+    color: #fff;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated road background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(78,205,196,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 50%, rgba(245,166,35,0.08) 0%, transparent 60%),
+      linear-gradient(180deg, #0d0d1a 0%, #111827 100%);
+    z-index: -2;
+  }
+
+  /* Speed lines */
+  .speed-lines {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .speed-lines span {
+    position: absolute;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(78,205,196,0.3), transparent);
+    animation: speedLine 3s linear infinite;
+    opacity: 0;
+  }
+  @keyframes speedLine {
+    0% { opacity: 0; transform: translateX(-100%); }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { opacity: 0; transform: translateX(100%); }
+  }
+
+  /* NAV */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+    background: rgba(13,13,26,0.9);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 1px;
+  }
+  .nav-logo svg { width: 40px; height: 40px; }
+  .nav-logo .e { color: var(--orange); }
+  .nav-logo .sakay { color: #fff; }
+  .nav-logo .mo { color: var(--orange); }
+
+  /* HERO */
+  .hero {
+    text-align: center;
+    padding: 60px 20px 40px;
+    animation: fadeUp 0.8s ease both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--orange), #e8941a);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 6px 18px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+
+  .hero h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.8rem, 7vw, 5rem);
+    letter-spacing: 3px;
+    line-height: 1.05;
+    margin-bottom: 16px;
+  }
+  .hero h1 span { color: var(--orange); }
+
+  .hero p {
+    max-width: 580px;
+    margin: 0 auto 40px;
+    color: rgba(255,255,255,0.6);
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+
+  /* INSTRUCTIONS */
+  .instructions-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: 1px solid var(--orange);
+    color: var(--orange);
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 10px 22px;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-bottom: 20px;
+  }
+  .instructions-toggle:hover { background: var(--orange); color: #fff; }
+  .instructions-toggle .arrow { transition: transform 0.3s; }
+  .instructions-toggle.open .arrow { transform: rotate(90deg); }
+
+  .instructions-box {
+    max-width: 660px;
+    margin: 0 auto 40px;
+    background: rgba(78,205,196,0.08);
+    border: 1px solid rgba(78,205,196,0.3);
+    border-radius: 16px;
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.5s ease, padding 0.3s;
+  }
+  .instructions-box.open { max-height: 400px; }
+  .instructions-box-inner { padding: 24px; }
+  .instructions-box h3 {
+    color: var(--teal);
+    font-size: 0.75rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .step {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 14px;
+  }
+  .step-num {
+    min-width: 28px;
+    height: 28px;
+    background: var(--orange);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 900;
+  }
+  .step p { color: rgba(255,255,255,0.75); font-size: 0.9rem; line-height: 1.6; }
+
+  /* FARE RATES CARD */
+  .rates-section {
+    max-width: 900px;
+    margin: 0 auto 40px;
+    padding: 0 20px;
+    animation: fadeUp 0.8s 0.2s ease both;
+  }
+
+  .section-label {
+    font-size: 0.7rem;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 12px;
+    font-weight: 800;
+  }
+
+  .rates-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .rate-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s, border-color 0.3s;
+  }
+  .rate-card:hover { transform: translateY(-4px); border-color: var(--orange); }
+  .rate-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--orange), var(--teal));
+  }
+  .rate-card .icon { font-size: 2rem; margin-bottom: 10px; }
+  .rate-card .label {
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 8px;
+  }
+  .rate-card .value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.4rem;
+    color: var(--orange);
+    line-height: 1;
+  }
+  .rate-card .sub { font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 4px; }
+
+  /* CALCULATOR */
+  .calc-section {
+    max-width: 900px;
+    margin: 0 auto 60px;
+    padding: 0 20px;
+    animation: fadeUp 0.8s 0.4s ease both;
+  }
+
+  .calc-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 36px;
+    backdrop-filter: blur(10px);
+  }
+
+  .calc-card h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.8rem;
+    letter-spacing: 2px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .calc-card h2 span { color: var(--orange); }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+
+  .form-group { display: flex; flex-direction: column; gap: 8px; }
+  .form-group label {
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    font-weight: 800;
+  }
+  .form-group input, .form-group select {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    color: #fff;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+  .form-group input:focus, .form-group select:focus { border-color: var(--orange); }
+  .form-group select option { background: #1a1a2e; }
+
+  .promo-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .promo-row input { flex: 1; }
+  .promo-btn {
+    background: rgba(245,166,35,0.15);
+    border: 1px solid var(--orange);
+    color: var(--orange);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 0.85rem;
+    padding: 0 20px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    white-space: nowrap;
+  }
+  .promo-btn:hover { background: var(--orange); color: #fff; }
+
+  .promo-msg {
+    font-size: 0.82rem;
+    margin-bottom: 16px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    display: none;
+  }
+  .promo-msg.success { background: rgba(78,205,196,0.15); color: var(--teal); display: block; }
+  .promo-msg.error { background: rgba(255,80,80,0.15); color: #ff6b6b; display: block; }
+
+  .calc-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--orange), #e8941a);
+    border: none;
+    border-radius: 14px;
+    padding: 18px;
+    color: #fff;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-bottom: 24px;
+  }
+  .calc-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(245,166,35,0.35); }
+  .calc-btn:active { transform: translateY(0); }
+
+  /* RESULT */
+  .result-box {
+    background: linear-gradient(135deg, rgba(245,166,35,0.1), rgba(78,205,196,0.08));
+    border: 1px solid rgba(245,166,35,0.35);
+    border-radius: 18px;
+    padding: 28px;
+    display: none;
+    animation: fadeUp 0.4s ease both;
+  }
+  .result-box.show { display: block; }
+
+  .result-header {
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 16px;
+    font-weight: 800;
+  }
+
+  .result-breakdown { margin-bottom: 20px; }
+  .result-line {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.7);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .result-line:last-child { border: none; }
+  .result-line .name { display: flex; align-items: center; gap: 8px; }
+  .result-line .amount { font-weight: 700; }
+  .result-line.discount .amount { color: var(--teal); }
+  .result-line.discount { color: var(--teal); }
+
+  .total-fare {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 16px;
+    border-top: 2px solid rgba(245,166,35,0.4);
+  }
+  .total-fare .label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 3px;
+    color: rgba(255,255,255,0.8);
+  }
+  .total-fare .amount {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.8rem;
+    color: var(--orange);
+    line-height: 1;
+  }
+
+  /* FOOTER */
+  footer {
+    text-align: center;
+    padding: 24px;
+    border-top: 1px solid var(--border);
+    color: rgba(255,255,255,0.35);
+    font-size: 0.85rem;
+  }
+
+  @media (max-width: 600px) {
+    .rates-grid { grid-template-columns: 1fr; }
+    .form-row { grid-template-columns: 1fr; }
+    .calc-card { padding: 24px 18px; }
+    nav { padding: 14px 18px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Speed Lines -->
+<div class="speed-lines" id="speedLines"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="20" cy="20" r="19" stroke="#1A3A6B" stroke-width="2"/>
+      <ellipse cx="20" cy="24" rx="11" ry="5" fill="#1A3A6B"/>
+      <path d="M13 22 Q16 18 20 18 Q24 18 27 22" stroke="#1A3A6B" stroke-width="1.5" fill="none"/>
+      <circle cx="14" cy="25" r="2.5" fill="#1A3A6B"/>
+      <circle cx="26" cy="25" r="2.5" fill="#1A3A6B"/>
+      <path d="M18 14 Q20 10 22 14" stroke="#F5A623" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <circle cx="20" cy="14" r="1.5" fill="#F5A623"/>
+    </svg>
+    <span><span class="e">e</span><span class="sakay">Sakay</span><span class="mo">Mo</span></span>
+  </div>
+  <div style="color:rgba(255,255,255,0.4); font-size:0.8rem; letter-spacing:2px; text-transform:uppercase; font-weight:700;">Fare Guide</div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">🏍️ Official Fare Guide 2026</div>
+  <h1>Welcome to <span>eSakayMo</span><br>Fare Guide!</h1>
+  <p>Compute your motorcycle taxi fare in seconds. Enter your distance, apply promo codes, and know your exact total before you ride.</p>
+
+  <button class="instructions-toggle" onclick="toggleInstructions(this)">
+    <span class="arrow">▶</span> Click here for instructions
+  </button>
+
+  <div class="instructions-box" id="instructionsBox">
+    <div class="instructions-box-inner">
+      <h3>How to Compute Your Fare</h3>
+      <div class="step">
+        <div class="step-num">1</div>
+        <p>Identify your <strong>pickup location</strong> and <strong>destination</strong> to determine the total distance of your ride in kilometers.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <p>Check the <strong>fare rate per kilometer</strong>. Multiply it by the distance and add the base booking fee to get the subtotal.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <p>Review any <strong>discounts or promo codes</strong> before finalizing. Enter your code below to apply it and get your final fare.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FARE RATES -->
+<div class="rates-section">
+  <div class="section-label">📋 Fare Rate Structure</div>
+  <div class="rates-grid">
+    <div class="rate-card">
+      <div class="icon">🚦</div>
+      <div class="label">Base Fare</div>
+      <div class="value">₱50</div>
+      <div class="sub">Booking fee</div>
+    </div>
+    <div class="rate-card">
+      <div class="icon">📍</div>
+      <div class="label">Covered Distance</div>
+      <div class="value">2 km</div>
+      <div class="sub">Included in base fare</div>
+    </div>
+    <div class="rate-card">
+      <div class="icon">📏</div>
+      <div class="label">Per KM Rate</div>
+      <div class="value">₱10</div>
+      <div class="sub">Every km beyond 2</div>
+    </div>
+  </div>
+</div>
+
+<!-- CALCULATOR -->
+<div class="calc-section">
+  <div class="section-label">🧮 Fare Calculator</div>
+  <div class="calc-card">
+    <h2>🏍️ Compute Your <span>Fare</span></h2>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Pickup Location</label>
+        <input type="text" id="pickup" placeholder="e.g. Ayala MRT Station" />
+      </div>
+      <div class="form-group">
+        <label>Destination</label>
+        <input type="text" id="destination" placeholder="e.g. BGC High Street" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Distance (km)</label>
+        <input type="number" id="distance" placeholder="e.g. 5.5" min="0" step="0.1" />
+      </div>
+      <div class="form-group">
+        <label>Ride Type</label>
+        <select id="rideType">
+          <option value="1">Regular Ride (×1.0)</option>
+          <option value="1.5">Rush Hour (×1.5)</option>
+          <option value="2">Night Ride (×2.0)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:20px;">
+      <label>Promo Code</label>
+      <div class="promo-row">
+        <input type="text" id="promoCode" placeholder="Enter promo code (e.g. SAKAY20)" style="margin:0;" />
+        <button class="promo-btn" onclick="applyPromo()">Apply</button>
+      </div>
+      <div class="promo-msg" id="promoMsg"></div>
+    </div>
+
+    <button class="calc-btn" onclick="computeFare()">▶ Compute Fare</button>
+
+    <div class="result-box" id="resultBox">
+      <div class="result-header">📄 Fare Breakdown</div>
+      <div class="result-breakdown" id="resultBreakdown"></div>
+      <div class="total-fare">
+        <div class="label">TOTAL FARE</div>
+        <div class="amount" id="totalFare">₱0</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>Student Name | Grade &amp; Section ©2026</footer>
+
+<script>
+  // Speed lines
+  const container = document.getElementById('speedLines');
+  for (let i = 0; i < 20; i++) {
+    const span = document.createElement('span');
+    span.style.cssText = `
+      top: ${Math.random() * 100}%;
+      width: ${100 + Math.random() * 300}px;
+      animation-delay: ${Math.random() * 3}s;
+      animation-duration: ${2 + Math.random() * 3}s;
+      opacity: ${0.1 + Math.random() * 0.3};
+    `;
+    container.appendChild(span);
+  }
+
+  // Instructions toggle
+  function toggleInstructions(btn) {
+    btn.classList.toggle('open');
+    document.getElementById('instructionsBox').classList.toggle('open');
+    btn.querySelector('span').textContent = btn.classList.contains('open') ? '▼' : '▶';
+  }
+
+  // Promo codes
+  const PROMOS = {
+    'SAKAY20': { discount: 0.20, label: '20% Off — Welcome Promo!' },
+    'RIDE10':  { discount: 0.10, label: '10% Off — Loyalty Reward' },
+    'FREE5':   { flat: 5,        label: '₱5 Off — First Ride' },
+    'BAGO15':  { discount: 0.15, label: '15% Off — Bagong Sakay' },
+  };
+
+  let activePromo = null;
+
+  function applyPromo() {
+    const code = document.getElementById('promoCode').value.trim().toUpperCase();
+    const msg = document.getElementById('promoMsg');
+    if (PROMOS[code]) {
+      activePromo = { code, ...PROMOS[code] };
+      msg.className = 'promo-msg success';
+      msg.textContent = `✅ Promo applied: ${PROMOS[code].label}`;
+    } else {
+      activePromo = null;
+      msg.className = 'promo-msg error';
+      msg.textContent = '❌ Invalid promo code. Try: SAKAY20, RIDE10, FREE5, BAGO15';
+    }
+  }
+
+  function computeFare() {
+    const distanceInput = parseFloat(document.getElementById('distance').value);
+    const multiplier = parseFloat(document.getElementById('rideType').value);
+
+    if (isNaN(distanceInput) || distanceInput <= 0) {
+      alert('Please enter a valid distance.');
+      return;
+    }
+
+    const BASE_FARE = 50;
+    const BASE_KM = 2;
+    const PER_KM = 10;
+
+    const extraKm = Math.max(0, distanceInput - BASE_KM);
+    const rawFare = (BASE_FARE + extraKm * PER_KM) * multiplier;
+
+    let discountAmt = 0;
+    let discountLabel = '';
+    if (activePromo) {
+      if (activePromo.discount) {
+        discountAmt = rawFare * activePromo.discount;
+        discountLabel = `${activePromo.code} (${Math.round(activePromo.discount * 100)}% off)`;
+      } else if (activePromo.flat) {
+        discountAmt = activePromo.flat;
+        discountLabel = `${activePromo.code} (₱${activePromo.flat} off)`;
+      }
+    }
+
+    const finalFare = Math.max(0, rawFare - discountAmt);
+
+    // Build breakdown
+    let html = '';
+    html += row('🚦 Base Fare', `₱${BASE_FARE.toFixed(2)}`);
+    html += row(`📏 Extra Distance (${extraKm.toFixed(2)} km × ₱${PER_KM})`, `₱${(extraKm * PER_KM).toFixed(2)}`);
+    if (multiplier > 1) {
+      html += row(`⏰ Surge Multiplier (×${multiplier})`, `₱${(rawFare - (BASE_FARE + extraKm * PER_KM)).toFixed(2)}`);
+    }
+    if (discountAmt > 0) {
+      html += rowDiscount(`🎟️ Discount: ${discountLabel}`, `-₱${discountAmt.toFixed(2)}`);
+    }
+
+    document.getElementById('resultBreakdown').innerHTML = html;
+    document.getElementById('totalFare').textContent = `₱${finalFare.toFixed(2)}`;
+    const box = document.getElementById('resultBox');
+    box.classList.remove('show');
+    setTimeout(() => box.classList.add('show'), 10);
+  }
+
+  function row(name, amount) {
+    return `<div class="result-line"><span class="name">${name}</span><span class="amount">${amount}</span></div>`;
+  }
+  function rowDiscount(name, amount) {
+    return `<div class="result-line discount"><span class="name">${name}</span><span class="amount">${amount}</span></div>`;
+  }
+</script>
+</body>
+</html>
