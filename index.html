@@ -413,6 +413,76 @@
     font-size: 0.85rem;
   }
 
+  /* AUTOCOMPLETE */
+  .autocomplete-wrap {
+    position: relative;
+  }
+  .autocomplete-wrap input {
+    width: 100%;
+    padding-right: 36px;
+  }
+  .ac-clear {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.3);
+    font-size: 1rem;
+    cursor: pointer;
+    display: none;
+    line-height: 1;
+    padding: 2px;
+  }
+  .ac-clear:hover { color: var(--orange); }
+  .ac-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0; right: 0;
+    background: #1a1a2e;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    z-index: 200;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    max-height: 240px;
+    overflow-y: auto;
+    display: none;
+  }
+  .ac-dropdown.open { display: block; }
+  .ac-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 16px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.8);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    transition: background 0.15s;
+  }
+  .ac-item:last-child { border: none; }
+  .ac-item:hover, .ac-item.active { background: rgba(245,166,35,0.12); color: #fff; }
+  .ac-item .ac-icon { font-size: 1rem; min-width: 20px; }
+  .ac-item .ac-name { font-weight: 700; }
+  .ac-item .ac-area { font-size: 0.75rem; color: rgba(255,255,255,0.4); margin-left: auto; }
+  .ac-empty {
+    padding: 14px 16px;
+    color: rgba(255,80,80,0.8);
+    font-size: 0.85rem;
+    text-align: center;
+  }
+  .field-err {
+    font-size: 0.78rem;
+    color: #ff6b6b;
+    margin-top: 5px;
+    display: none;
+  }
+  .field-err.show { display: block; }
+  .input-valid { border-color: var(--teal) !important; }
+  .input-invalid { border-color: #ff6b6b !important; }
+
   @media (max-width: 600px) {
     .rates-grid { grid-template-columns: 1fr; }
     .form-row { grid-template-columns: 1fr; }
@@ -506,11 +576,21 @@
     <div class="form-row">
       <div class="form-group">
         <label>Pickup Location</label>
-        <input type="text" id="pickup" placeholder="e.g. Ayala MRT Station" />
+        <div class="autocomplete-wrap" id="pickupWrap">
+          <input type="text" id="pickup" placeholder="Search pickup location…" autocomplete="off" oninput="acSearch('pickup')" onfocus="acSearch('pickup')" onkeydown="acKey(event,'pickup')" />
+          <button class="ac-clear" id="pickupClear" onclick="acClear('pickup')">✕</button>
+          <div class="ac-dropdown" id="pickupDropdown"></div>
+        </div>
+        <div class="field-err" id="pickupErr">⚠️ Location not recognized. Please select from the list.</div>
       </div>
       <div class="form-group">
         <label>Destination</label>
-        <input type="text" id="destination" placeholder="e.g. BGC High Street" />
+        <div class="autocomplete-wrap" id="destinationWrap">
+          <input type="text" id="destination" placeholder="Search destination…" autocomplete="off" oninput="acSearch('destination')" onfocus="acSearch('destination')" onkeydown="acKey(event,'destination')" />
+          <button class="ac-clear" id="destinationClear" onclick="acClear('destination')">✕</button>
+          <div class="ac-dropdown" id="destinationDropdown"></div>
+        </div>
+        <div class="field-err" id="destinationErr">⚠️ Location not recognized. Please select from the list.</div>
       </div>
     </div>
 
@@ -576,7 +656,190 @@
     btn.querySelector('span').textContent = btn.classList.contains('open') ? '▼' : '▶';
   }
 
-  // Promo codes
+  // ─── PLACES DATABASE ───────────────────────────────────────────────
+  const PLACES = [
+    { name: 'Ayala MRT Station',        area: 'Makati',        icon: '🚇' },
+    { name: 'BGC High Street',          area: 'Taguig',        icon: '🏙️' },
+    { name: 'SM Mall of Asia',          area: 'Pasay',         icon: '🛍️' },
+    { name: 'Trinoma Mall',             area: 'Quezon City',   icon: '🛍️' },
+    { name: 'SM Megamall',              area: 'Mandaluyong',   icon: '🛍️' },
+    { name: 'SM City North EDSA',       area: 'Quezon City',   icon: '🛍️' },
+    { name: 'Robinsons Galleria',       area: 'Ortigas',       icon: '🛍️' },
+    { name: 'Eastwood City',            area: 'Quezon City',   icon: '🏙️' },
+    { name: 'Greenbelt',                area: 'Makati',        icon: '🌿' },
+    { name: 'Glorietta',                area: 'Makati',        icon: '🛍️' },
+    { name: 'NAIA Terminal 1',          area: 'Pasay',         icon: '✈️' },
+    { name: 'NAIA Terminal 2',          area: 'Pasay',         icon: '✈️' },
+    { name: 'NAIA Terminal 3',          area: 'Pasay',         icon: '✈️' },
+    { name: 'Ninoy Aquino Airport',     area: 'Pasay',         icon: '✈️' },
+    { name: 'LRT Baclaran Station',     area: 'Parañaque',     icon: '🚇' },
+    { name: 'LRT Buendia Station',      area: 'Pasay',         icon: '🚇' },
+    { name: 'MRT Cubao Station',        area: 'Quezon City',   icon: '🚇' },
+    { name: 'MRT Shaw Boulevard',       area: 'Mandaluyong',   icon: '🚇' },
+    { name: 'MRT Boni Station',         area: 'Mandaluyong',   icon: '🚇' },
+    { name: 'Bonifacio Global City',    area: 'Taguig',        icon: '🏢' },
+    { name: 'Ortigas Center',           area: 'Pasig',         icon: '🏢' },
+    { name: 'Makati CBD',               area: 'Makati',        icon: '🏢' },
+    { name: 'Quezon Memorial Circle',   area: 'Quezon City',   icon: '⭕' },
+    { name: 'UP Diliman Campus',        area: 'Quezon City',   icon: '🎓' },
+    { name: 'Ateneo de Manila University', area: 'Quezon City', icon: '🎓' },
+    { name: 'De La Salle University',   area: 'Manila',        icon: '🎓' },
+    { name: 'UST Campus',               area: 'Manila',        icon: '🎓' },
+    { name: 'FEU Manila',               area: 'Manila',        icon: '🎓' },
+    { name: 'Mapúa University',         area: 'Manila',        icon: '🎓' },
+    { name: 'PGH Medical Center',       area: 'Manila',        icon: '🏥' },
+    { name: 'St. Luke\'s BGC',          area: 'Taguig',        icon: '🏥' },
+    { name: 'Makati Medical Center',    area: 'Makati',        icon: '🏥' },
+    { name: 'The Medical City Ortigas', area: 'Pasig',         icon: '🏥' },
+    { name: 'Rizal Park / Luneta',      area: 'Manila',        icon: '🌳' },
+    { name: 'Manila Ocean Park',        area: 'Manila',        icon: '🐠' },
+    { name: 'Intramuros',               area: 'Manila',        icon: '🏛️' },
+    { name: 'Binondo Chinatown',        area: 'Manila',        icon: '🏮' },
+    { name: 'Divisoria Market',         area: 'Manila',        icon: '🛒' },
+    { name: 'Cubao Bus Terminal',       area: 'Quezon City',   icon: '🚌' },
+    { name: 'Pasay Bus Terminal',       area: 'Pasay',         icon: '🚌' },
+    { name: 'Lawton Terminal',          area: 'Manila',        icon: '🚌' },
+    { name: 'Quiapo Church',            area: 'Manila',        icon: '⛪' },
+    { name: 'Manila City Hall',         area: 'Manila',        icon: '🏛️' },
+    { name: 'Quezon City Hall',         area: 'Quezon City',   icon: '🏛️' },
+    { name: 'Makati City Hall',         area: 'Makati',        icon: '🏛️' },
+    { name: 'Pasig City Hall',          area: 'Pasig',         icon: '🏛️' },
+    { name: 'Taguig City Hall',         area: 'Taguig',        icon: '🏛️' },
+    { name: 'Mandaluyong City Hall',    area: 'Mandaluyong',   icon: '🏛️' },
+    { name: 'Caloocan City Hall',       area: 'Caloocan',      icon: '🏛️' },
+    { name: 'Marikina City Hall',       area: 'Marikina',      icon: '🏛️' },
+    { name: 'Parañaque City Hall',      area: 'Parañaque',     icon: '🏛️' },
+    { name: 'Las Piñas City Hall',      area: 'Las Piñas',     icon: '🏛️' },
+    { name: 'Muntinlupa City Hall',     area: 'Muntinlupa',    icon: '🏛️' },
+    { name: 'Pasay City Hall',          area: 'Pasay',         icon: '🏛️' },
+    { name: 'Valenzuela City Hall',     area: 'Valenzuela',    icon: '🏛️' },
+    { name: 'Malabon City Hall',        area: 'Malabon',       icon: '🏛️' },
+    { name: 'Navotas City Hall',        area: 'Navotas',       icon: '🏛️' },
+    { name: 'SM Fairview',              area: 'Quezon City',   icon: '🛍️' },
+    { name: 'Robinsons Place Manila',   area: 'Manila',        icon: '🛍️' },
+    { name: 'Festival Mall',            area: 'Muntinlupa',    icon: '🛍️' },
+    { name: 'Alabang Town Center',      area: 'Muntinlupa',    icon: '🛍️' },
+    { name: 'Market! Market!',          area: 'Taguig',        icon: '🛍️' },
+    { name: 'Venice Grand Canal Mall',  area: 'Taguig',        icon: '🛍️' },
+    { name: 'Shangri-La Plaza',         area: 'Mandaluyong',   icon: '🛍️' },
+    { name: 'The Podium',               area: 'Ortigas',       icon: '🛍️' },
+    { name: 'Araneta City Cubao',       area: 'Quezon City',   icon: '🎡' },
+    { name: 'Manila Zoo',               area: 'Manila',        icon: '🦁' },
+    { name: 'Star City',                area: 'Pasay',         icon: '🎢' },
+    { name: 'Solaire Resort',           area: 'Parañaque',     icon: '🎰' },
+    { name: 'City of Dreams Manila',    area: 'Parañaque',     icon: '🎰' },
+    { name: 'Newport World Resorts',    area: 'Pasay',         icon: '🎰' },
+  ];
+
+  // ─── AUTOCOMPLETE STATE ─────────────────────────────────────────────
+  const acState = { pickup: { selected: false, idx: -1 }, destination: { selected: false, idx: -1 } };
+
+  function acSearch(id) {
+    const input = document.getElementById(id);
+    const dropdown = document.getElementById(id + 'Dropdown');
+    const clearBtn = document.getElementById(id + 'Clear');
+    const query = input.value.trim().toLowerCase();
+
+    acState[id].selected = false;
+    markValidity(id, null);
+
+    clearBtn.style.display = query ? 'block' : 'none';
+
+    const filtered = query
+      ? PLACES.filter(p => p.name.toLowerCase().includes(query) || p.area.toLowerCase().includes(query))
+      : PLACES.slice(0, 12);
+
+    acState[id].idx = -1;
+    renderDropdown(id, filtered, dropdown);
+    dropdown.classList.add('open');
+  }
+
+  function renderDropdown(id, results, dropdown) {
+    if (results.length === 0) {
+      dropdown.innerHTML = `<div class="ac-empty">❌ No recognized location found.</div>`;
+    } else {
+      dropdown.innerHTML = results.map((p, i) =>
+        `<div class="ac-item" data-idx="${i}" onmousedown="acSelect('${id}', ${JSON.stringify(p).replace(/"/g, '&quot;')})">
+          <span class="ac-icon">${p.icon}</span>
+          <span class="ac-name">${highlight(p.name, document.getElementById(id).value)}</span>
+          <span class="ac-area">${p.area}</span>
+        </div>`
+      ).join('');
+    }
+  }
+
+  function highlight(text, query) {
+    if (!query) return text;
+    const re = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return text.replace(re, '<mark style="background:rgba(245,166,35,0.35);color:#fff;border-radius:2px;">$1</mark>');
+  }
+
+  function acSelect(id, place) {
+    const input = document.getElementById(id);
+    input.value = place.name;
+    document.getElementById(id + 'Dropdown').classList.remove('open');
+    document.getElementById(id + 'Clear').style.display = 'block';
+    acState[id].selected = true;
+    markValidity(id, true);
+    document.getElementById(id + 'Err').classList.remove('show');
+  }
+
+  function acClear(id) {
+    document.getElementById(id).value = '';
+    document.getElementById(id + 'Clear').style.display = 'none';
+    document.getElementById(id + 'Dropdown').classList.remove('open');
+    acState[id].selected = false;
+    markValidity(id, null);
+    document.getElementById(id + 'Err').classList.remove('show');
+    document.getElementById(id).focus();
+  }
+
+  function markValidity(id, valid) {
+    const input = document.getElementById(id);
+    input.classList.remove('input-valid', 'input-invalid');
+    if (valid === true) input.classList.add('input-valid');
+    if (valid === false) input.classList.add('input-invalid');
+  }
+
+  function acKey(e, id) {
+    const dropdown = document.getElementById(id + 'Dropdown');
+    const items = dropdown.querySelectorAll('.ac-item');
+    if (!items.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      acState[id].idx = Math.min(acState[id].idx + 1, items.length - 1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      acState[id].idx = Math.max(acState[id].idx - 1, 0);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (acState[id].idx >= 0) items[acState[id].idx].dispatchEvent(new MouseEvent('mousedown'));
+      return;
+    } else if (e.key === 'Escape') {
+      dropdown.classList.remove('open');
+      return;
+    }
+    items.forEach((el, i) => el.classList.toggle('active', i === acState[id].idx));
+    if (acState[id].idx >= 0) items[acState[id].idx].scrollIntoView({ block: 'nearest' });
+  }
+
+  // Close dropdowns when clicking outside
+  document.addEventListener('click', e => {
+    ['pickup', 'destination'].forEach(id => {
+      const wrap = document.getElementById(id + 'Wrap');
+      if (!wrap.contains(e.target)) {
+        document.getElementById(id + 'Dropdown').classList.remove('open');
+        // Mark invalid if typed but not selected
+        const input = document.getElementById(id);
+        if (input.value && !acState[id].selected) {
+          markValidity(id, false);
+          document.getElementById(id + 'Err').classList.add('show');
+        }
+      }
+    });
+  });
+
+  // ─── PROMO CODES ────────────────────────────────────────────────────
   const PROMOS = {
     'SAKAY20': { discount: 0.20, label: '20% Off — Welcome Promo!' },
     'RIDE10':  { discount: 0.10, label: '10% Off — Loyalty Reward' },
@@ -600,15 +863,32 @@
     }
   }
 
+  // ─── FARE COMPUTE ────────────────────────────────────────────────────
   function computeFare() {
-    const distanceInput = parseFloat(document.getElementById('distance').value);
-    const multiplier = parseFloat(document.getElementById('rideType').value);
+    let valid = true;
 
-    if (isNaN(distanceInput) || distanceInput <= 0) {
-      alert('Please enter a valid distance.');
-      return;
+    // Validate pickup
+    if (!acState.pickup.selected) {
+      markValidity('pickup', false);
+      document.getElementById('pickupErr').classList.add('show');
+      valid = false;
+    }
+    // Validate destination
+    if (!acState.destination.selected) {
+      markValidity('destination', false);
+      document.getElementById('destinationErr').classList.add('show');
+      valid = false;
     }
 
+    const distanceInput = parseFloat(document.getElementById('distance').value);
+    if (isNaN(distanceInput) || distanceInput <= 0) {
+      alert('Please enter a valid distance.');
+      valid = false;
+    }
+
+    if (!valid) return;
+
+    const multiplier = parseFloat(document.getElementById('rideType').value);
     const BASE_FARE = 50;
     const BASE_KM = 2;
     const PER_KM = 10;
@@ -630,8 +910,10 @@
 
     const finalFare = Math.max(0, rawFare - discountAmt);
 
-    // Build breakdown
     let html = '';
+    html += row(`📍 ${document.getElementById('pickup').value}`, '');
+    html += row(`🏁 ${document.getElementById('destination').value}`, '');
+    html += '<div style="height:8px;"></div>';
     html += row('🚦 Base Fare', `₱${BASE_FARE.toFixed(2)}`);
     html += row(`📏 Extra Distance (${extraKm.toFixed(2)} km × ₱${PER_KM})`, `₱${(extraKm * PER_KM).toFixed(2)}`);
     if (multiplier > 1) {
